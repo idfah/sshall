@@ -146,48 +146,39 @@ void parse_args(int narg, char *arg[])
     const char optstring[] = "+c::d:f:hip::qv";
 
     // for each command-line argument
-    while ((i = getopt_long(narg, arg, optstring, longopts, NULL)) != -1)
-    {
-        if (i == 'c')
-        {
-            if (optarg)
-            {
+    while ((i = getopt_long(narg, arg, optstring, longopts, NULL)) != -1) {
+        if (i == 'c') {
+            if (optarg) {
                 unsigned i = 0;
                 do optarg[i] = tolower(optarg[i]);
                 while (optarg[++i] != '\0');
 
-                if (strcmp(optarg, "always") == 0)
-                {
+                if (strcmp(optarg, "always") == 0) {
                     colstat = color_always;
                     debug_print(2, "color: always");
                 }
-                else if (strcmp(optarg, "auto") == 0)
-                {
+                else if (strcmp(optarg, "auto") == 0) {
                     colstat = color_auto;
                     debug_print(2, "color: auto");
                 }
-                else if (strcmp(optarg, "never") == 0)
-                {
+                else if (strcmp(optarg, "never") == 0) {
                     colstat = color_never;
                     debug_print(2, "color: never");
                 }
-                else
-                {
+                else {
                     fprintf(stderr, "Invalid color mode: %s\n", optarg);
                     print_usage();
                     exit(EXIT_FAILURE);
                 }
             }
-            else
-            {
+            else {
                 colstat = color_always;
                 debug_print(2, "color: always");
             }
         }
 
         // set delay between remote commands
-        else if (i == 'd')
-        {
+        else if (i == 'd') {
             // convert to double
             errno = 0;
             double full_delay = strtod(optarg, NULL);
@@ -207,8 +198,7 @@ void parse_args(int narg, char *arg[])
         }
 
         // specify host file
-        else if (i == 'f')
-        {
+        else if (i == 'f') {
             input = open(optarg, O_RDONLY, 0x0);
             if (input < 0)
                 debug_fail("Failed to open %s: %s", optarg, strerror(errno));
@@ -219,24 +209,19 @@ void parse_args(int narg, char *arg[])
         }
 
         // print usage and quit
-        else if (i == 'h')
-        {
+        else if (i == 'h') {
             print_usage();
             exit(EXIT_SUCCESS);
         }
 
         // allow interactive mode
         else if (i == 'i')
-        {
             interac = true;
-        }
 
         // setup parallel execution
-        else if (i == 'p')
-        {
+        else if (i == 'p') {
             // if optional argument given
-            if (optarg)
-            {
+            if (optarg) {
                 // set number of parallel commands
                 errno = 0;
                 npar = (unsigned)strtol(optarg, (char**)NULL, 10);
@@ -251,26 +236,22 @@ void parse_args(int narg, char *arg[])
         else if (i == 'q')
             debug_set(0);
 
-        else if (i == 'v')
-        {
-            if (debug > 0)
-            {
+        else if (i == 'v') {
+            if (debug > 0) {
                 ++debug;
                 debug_print(1, "debug level: %d", debug);
             }
         }
 
         // print usage and quit on unknown argument
-        else
-        {
+        else {
             print_usage();
             exit(EXIT_FAILURE);
         }
     }
 
     // skip remaining arguments if in interactive mode
-    if (interac)
-    {
+    if (interac) {
         if (optind < narg)
             debug_print(1, "Ignoring commands in interactive mode");
         return; 
@@ -278,8 +259,7 @@ void parse_args(int narg, char *arg[])
 
     // fail if not interactive and
     // no remaining arguments
-    if (optind == narg)
-    {
+    if (optind == narg) {
         debug_print(1, "No command given");
         print_usage();
         exit(EXIT_FAILURE);
@@ -292,8 +272,7 @@ void parse_args(int narg, char *arg[])
     strcpy(command, arg[optind]);
 
     // concatenate any additional command arguments
-    for (i = optind+1; i < narg; ++i)
-    {
+    for (i = optind+1; i < narg; ++i) {
         command = realloc(command,
                 sizeof(char)*(strlen(command)+strlen(arg[i])+2));
         if (command == NULL)
@@ -316,8 +295,7 @@ char *host_get()
     /* consider using getline! */
 
     // consume any spaces
-    do
-    {
+    do {
         curc = fgetc(stdin);
 
         // we're done if reached
@@ -337,10 +315,8 @@ char *host_get()
             curc != '\r' &&
             curc != ' '  &&
             curc != '\0' &&
-            curc != EOF  )
-    {
-        if (i > rbuff_cursize-2)
-        {
+            curc != EOF  ) {
+        if (i > rbuff_cursize-2) {
             rbuff = realloc(rbuff, rbuff_cursize+rbuff_isize);
             if (rbuff == NULL)
                 debug_fail("%s", strerror(errno));
@@ -365,8 +341,7 @@ void host_print(const char *host)
     if(debug < 1)
         return;
 
-    if (usecol)
-    {
+    if (usecol) {
         color_set(coltx_host, colfg_host, colbg_host);
         printf("%s\n", host);
         color_set(coltx_dash, colfg_dash, colbg_dash);
@@ -389,8 +364,7 @@ void seq_run()
 
     debug_print(1, "Running sequentially", npar);
 
-    while ((host = host_get()) != NULL)
-    {
+    while ((host = host_get()) != NULL) {
         int    status;
         pid_t  id;
 
@@ -402,8 +376,7 @@ void seq_run()
         if ((id = fork()) < 0)
             debug_warn_errno("Failed to fork");
 
-        else if (id == 0)
-        {
+        else if (id == 0) {
             char  *arg[] = {rcmd, cmd_args, host, command, NULL};
 
             int tty = open("/dev/tty", O_RDONLY, 0x0);
@@ -466,8 +439,7 @@ void par_async_monitor(char *host, int lock_fd)
     if ((id = fork()) < 0)
         debug_warn_errno("Failed to fork");
 
-    else if (id == 0)
-    {
+    else if (id == 0) {
         char *arg[] = {rcmd, cmd_args, host, command, NULL};
 
         int tty = open("/dev/tty", O_RDONLY, 0x0);
@@ -510,8 +482,7 @@ void par_async_monitor(char *host, int lock_fd)
         color_set(coltx_err, colfg_err, colbg_err);
 
     //
-    while (true)
-    {
+    while (true) {
         /*    char c;
               size_t r = read(temp_fd, &c, 1);
               if (r == 0)
@@ -526,8 +497,7 @@ void par_async_monitor(char *host, int lock_fd)
         size_t r = fread(rbuff, sizeof(char), rbuff_isize, temp_file);
         if (r == 0)
             break;
-        else if (r < 0)
-        {
+        else if (r < 0) {
             if (usecol)
                 color_reset();
             debug_fail_errno("Failed to read temp file %s", temp_name);
@@ -595,8 +565,7 @@ void par_async_run()
     debug_print(2, "using lockfile %s", lock_name);
     //}
 
-    while ((host = host_get()) != NULL)
-    {
+    while ((host = host_get()) != NULL) {
         pid_t id;
 
         fflush(stdin);
